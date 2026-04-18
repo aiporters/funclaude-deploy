@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  funclaude:
+    image: ghcr.io/aiporters/funclaude:latest
+    container_name: funclaude
+    restart: always
+    ports:
+      - "8282:8282"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    # 如果你有自建的外部 docker network (如 nginx-proxy 和 funclaude 同网)，解注释:
+    # networks:
+    #   - web_default
+
+# networks:
+#   web_default:
+#     external: true

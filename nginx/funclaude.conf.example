@@ -1,0 +1,56 @@
+# funclaude nginx 反代示例
+# 把 example.com / claudeusercontent.example.com 替换成你自己的域名
+# TLS 证书路径按你的实际情况改 (certbot / 自签 / 云厂商托管)
+
+# 主站：映射 claude.ai
+server {
+    listen 443 ssl http2;
+    server_name example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+    # SSE streaming + 长连接
+    proxy_http_version 1.1;
+    proxy_read_timeout 600s;
+    proxy_send_timeout 600s;
+    proxy_buffering off;
+
+    location / {
+        proxy_pass http://127.0.0.1:8282;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
+# artifacts 子域：映射 www.claudeusercontent.com
+# 与主站同一后端，由 funclaude 根据 Host 头路由到 usercontent vhost
+server {
+    listen 443 ssl http2;
+    server_name claudeusercontent.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+    proxy_http_version 1.1;
+    proxy_buffering off;
+
+    location / {
+        proxy_pass http://127.0.0.1:8282;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# HTTP → HTTPS
+server {
+    listen 80;
+    server_name example.com claudeusercontent.example.com;
+    return 301 https://$host$request_uri;
+}
