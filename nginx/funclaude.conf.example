@@ -1,14 +1,15 @@
 # funclaude nginx 反代示例
-# 把 example.com / claudeusercontent.example.com 替换成你自己的域名
+# 把 funclaude.yourdomain.com / claudeusercontent.yourdomain.com 替换成你自己的域名
 # TLS 证书路径按你的实际情况改 (certbot / 自签 / 云厂商托管)
+# 下面假设你已经有 *.yourdomain.com 的通配证书 (certbot 方式通常位于 /etc/letsencrypt/live/yourdomain.com/)
 
 # 主站：映射 claude.ai
 server {
     listen 443 ssl http2;
-    server_name example.com;
+    server_name funclaude.yourdomain.com;
 
-    ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
 
     # SSE streaming + 长连接
     proxy_http_version 1.1;
@@ -31,10 +32,10 @@ server {
 # 与主站同一后端，由 funclaude 根据 Host 头路由到 usercontent vhost
 server {
     listen 443 ssl http2;
-    server_name claudeusercontent.example.com;
+    server_name claudeusercontent.yourdomain.com;
 
-    ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
 
     proxy_http_version 1.1;
     proxy_buffering off;
@@ -51,6 +52,6 @@ server {
 # HTTP → HTTPS
 server {
     listen 80;
-    server_name example.com claudeusercontent.example.com;
+    server_name funclaude.yourdomain.com claudeusercontent.yourdomain.com;
     return 301 https://$host$request_uri;
 }
