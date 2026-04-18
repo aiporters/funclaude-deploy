@@ -70,7 +70,7 @@ docker compose logs -f
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `FUNCLAUDE_USERCONTENT_DOMAIN` | 空 | artifacts 子域（如 `claudeusercontent.yourdomain.com`）。**留空则 HTML/docs artifacts 预览不可用**，强烈建议配置 |
-| `FUNCLAUDE_PROXY_URL` | 空（直连） | 出站代理。海外机器留空走直连；大陆机器填 `socks5://host:port`（compose 里有 warp 容器则填 `socks5://warp:1080`） |
+| `FUNCLAUDE_PROXY_URL` | 空（直连） | 出站代理。海外机器留空走直连；大陆机器按需填以下任一：<br>• SOCKS5 无认证：`socks5://host:port`（compose 里有 warp 容器则 `socks5://warp:1080`）<br>• SOCKS5 带认证：`socks5://user:pass@host:port`<br>• HTTP CONNECT 无认证：`http://host:port`<br>• HTTP CONNECT 带认证：`http://user:pass@host:port` |
 | `FUNCLAUDE_SITE_PASSWORD` | 空 | 站点总门禁，空=不启用 |
 
 ## License
