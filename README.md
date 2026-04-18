@@ -28,7 +28,7 @@ curl 'http://127.0.0.1:8282/manage-api/auth/oauth_token' \
 ### 1. 前置条件
 
 - 一台装好 Docker 的服务器
-- 一个能出墙的代理（如Cloudflare Warp SOCKS5）
+- 服务器能访问 claude.ai（海外机器通常直连即可；大陆机器需准备出墙代理，如 Cloudflare Warp SOCKS5）
 - 一个域名 + 通配证书（推荐 `*.yourdomain.com`），用来分别接主站和 artifacts 子域
 - Nginx 或同类反代
 
@@ -70,7 +70,7 @@ docker compose logs -f
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `FUNCLAUDE_USERCONTENT_DOMAIN` | 空 | artifacts 子域（如 `claudeusercontent.yourdomain.com`）。**留空则 HTML/docs artifacts 预览不可用**，强烈建议配置 |
-| `FUNCLAUDE_PROXY_URL` | `socks5://warp:1080` | 出站代理。默认假设 docker 网络里有叫 `warp` 的容器；实际一般要改成自己的代理地址 |
+| `FUNCLAUDE_PROXY_URL` | 空（直连） | 出站代理。海外机器留空走直连；大陆机器填 `socks5://host:port`（compose 里有 warp 容器则填 `socks5://warp:1080`） |
 | `FUNCLAUDE_SITE_PASSWORD` | 空 | 站点总门禁，空=不启用 |
 
 ## License
