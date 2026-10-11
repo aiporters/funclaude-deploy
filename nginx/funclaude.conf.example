@@ -1,7 +1,7 @@
 # funclaude nginx 反代示例
-# 把 funclaude.yourdomain.com / claudeusercontent.yourdomain.com 替换成你自己的域名
+# 把 funclaude.yourdomain.com / claudeusercontent.yourdomain.com / *.frame.yourdomain.com 替换成你自己的域名
 # TLS 证书路径按你的实际情况改 (certbot / 自签 / 云厂商托管)
-# 下面假设你已经有 *.yourdomain.com 的通配证书 (certbot 方式通常位于 /etc/letsencrypt/live/yourdomain.com/)
+# 下面假设你的证书同时包含 *.yourdomain.com 和 *.frame.yourdomain.com 两个 SAN (certbot 方式通常位于 /etc/letsencrypt/live/yourdomain.com/)
 
 # 主站：映射 claude.ai
 server {
@@ -49,9 +49,31 @@ server {
     }
 }
 
+# frame 泛域：映射 <id>.frame.claudeusercontent.com（Claude Code artifact 预览）
+# 同一后端；funclaude 按 Host 头把 <id>.frame.yourdomain.com 反向映射回上游
+server {
+    listen 443 ssl http2;
+    server_name *.frame.yourdomain.com;
+    ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    proxy_http_version 1.1;
+    proxy_buffering off;
+
+    location / {
+        proxy_pass http://127.0.0.1:8282;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
 # HTTP → HTTPS
 server {
     listen 80;
-    server_name funclaude.yourdomain.com claudeusercontent.yourdomain.com;
+    server_name funclaude.yourdomain.com claudeusercontent.yourdomain.com *.frame.yourdomain.com;
     return 301 https://$host$request_uri;
 }
