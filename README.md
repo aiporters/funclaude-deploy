@@ -119,9 +119,89 @@ FUNCLAUDE_SITE_PASSWORD=        # 空 = 不启用站点门禁
 acme.sh --issue --dns dns_ali -d yourdomain.com -d '*.yourdomain.com' -d '*.frame.yourdomain.com'
 ```
 
-### nginx 要点
+### nginx 配置示例
 
-完整示例见 `nginx/funclaude.conf.example`。
+完整文件见 `nginx/funclaude.conf.example`，下面是可以直接套用的最小配置。把三个域名换成你自己的，证书路径按实际情况改。
+
+```nginx
+# 主站：映射 claude.ai
+server {
+    listen 443 ssl http2;
+    server_name funclaude.yourdomain.com;
+
+    ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    client_max_body_size 150M;
+
+    location / {
+        proxy_pass http://127.0.0.1:8282;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_buffering off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+}
+
+# artifacts 子域：映射 www.claudeusercontent.com
+server {
+    listen 443 ssl http2;
+    server_name claudeusercontent.yourdomain.com;
+
+    ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8282;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+    }
+}
+
+# frame 泛域：映射 <id>.frame.claudeusercontent.com（Claude Code artifact 预览）
+server {
+    listen 443 ssl http2;
+    server_name *.frame.yourdomain.com;
+
+    ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8282;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_buffering off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }
+}
+
+# HTTP → HTTPS
+server {
+    listen 80;
+    server_name funclaude.yourdomain.com claudeusercontent.yourdomain.com *.frame.yourdomain.com;
+    return 301 https://$host$request_uri;
+}
+```
+
+nginx 和 funclaude 都跑在 Docker 里、处于同一个 network 时，把三处 `proxy_pass http://127.0.0.1:8282` 换成容器名 `http://funclaude:8282`。
+
+### nginx 要点
 
 - 三个 `server` 块都 `proxy_pass` 到同一个 funclaude 后端，`proxy_set_header Host $host` 必须保留，funclaude 靠它分流。
 - 第三个块 `server_name *.frame.yourdomain.com;`，证书用上面那张双 SAN 的。
